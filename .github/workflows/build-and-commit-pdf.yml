@@ -22,12 +22,13 @@ jobs:
       - name: Compile LaTeX to PDF
         uses: xu-cheng/latex-action@v3
         with:
-          root_file: Mxck_FTG_Dokumentation.tex
+          root_file: main.tex
+          working_directory: Projektarbeit_MXCK_FTG
 
       - name: Prepare output folder
         run: |
           mkdir -p pdf
-          cp main.pdf pdf/dokumentation.pdf
+          cp Projektarbeit_MXCK_FTG/main.pdf pdf/dokumentation.pdf
 
       - name: Commit PDF if changed
         run: |
