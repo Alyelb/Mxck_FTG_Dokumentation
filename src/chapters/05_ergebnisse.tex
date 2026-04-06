@@ -1,0 +1,125 @@
+%============================================================
+\chapter{Ergebnisse und Evaluation}
+\label{chap:ergebnisse}
+%============================================================
+
+\section{Testumgebung}
+\label{sec:test_env}
+
+Alle Versuchsläufe wurden auf einem Indoor-Parcours mit den
+folgenden Eigenschaften durchgeführt:
+
+\begin{itemize}
+  \item Abmessungen: ca.\ $6\,\text{m} \times 4\,\text{m}$
+  \item Bodenbelag: Linoleumboden (reflektierend)
+  \item Hindernisse: 4--6 statische Pylone (Höhe ca.\ $50\,\text{cm}$)
+  \item Beleuchtung: Deckenleuchten (kein Tages\-lichteintrag)
+\end{itemize}
+
+Die Tests wurden in zwei Phasen unterteilt:
+\begin{enumerate}
+  \item \textbf{Simulator} (F1TENTH Gym): Erste Funktionsverifikation.
+  \item \textbf{Reales Fahrzeug}: Übertragung auf die Hardware-Plattform.
+\end{enumerate}
+
+%------------------------------------------------------------
+\section{Simulationsergebnisse}
+\label{sec:sim_results}
+%------------------------------------------------------------
+
+Im Simulator konnte der Algorithmus bei Verwendung der in
+\cref{tab:parameter} angegebenen Standardparameter in allen
+Testläufen mindestens \textbf{80\,\%} der Hindernisse erfolgreich
+umfahren.
+Bei geringer Hindernisdichte (2--3 Pylone auf dem Parcours)
+wurde ein Durchfahren ohne Kollision in \(8\) von \(10\) Läufen
+beobachtet.
+
+\begin{table}[H]
+  \centering
+  \caption{Simulationsergebnisse (F1TENTH Gym)}
+  \label{tab:sim_results}
+  \begin{tabular}{@{}lcccc@{}}
+    \toprule
+    \textbf{Szenario}  & \textbf{Läufe}
+      & \textbf{Kollisionsfrei} & \textbf{Kollisionen}
+      & \textbf{Erfolgsrate} \\
+    \midrule
+    Wenige Hindernisse (2--3)  & 10 & 8 & 2 & 80\,\% \\
+    Mittlere Dichte (4--5)     & 10 & 5 & 5 & 50\,\% \\
+    Hohe Dichte (6+)           & 10 & 2 & 8 & 20\,\% \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+%------------------------------------------------------------
+\section{Ergebnisse auf dem realen Fahrzeug}
+\label{sec:real_results}
+%------------------------------------------------------------
+
+Bei der Übertragung auf das reale Fahrzeug traten erhebliche
+Leistungseinbrüche auf.
+In den meisten Testläufen kollidierte das Fahrzeug oder verlor
+die Kontrolle innerhalb der ersten $5\,\text{s}$ nach dem Start.
+Die beobachteten Hauptprobleme werden im folgenden Abschnitt
+dokumentiert.
+
+\begin{table}[H]
+  \centering
+  \caption{Ergebnisse auf dem realen Fahrzeug}
+  \label{tab:real_results}
+  \begin{tabular}{@{}lcccc@{}}
+    \toprule
+    \textbf{Szenario}  & \textbf{Läufe}
+      & \textbf{Kollisionsfrei} & \textbf{Kollisionen}
+      & \textbf{Erfolgsrate} \\
+    \midrule
+    Leerer Parcours               & 5 & 4 & 1 & 80\,\% \\
+    Wenige Hindernisse (2--3)     & 5 & 1 & 4 & 20\,\% \\
+    Mittlere Dichte (4--5)        & 5 & 0 & 5 &  0\,\% \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+%------------------------------------------------------------
+\section{Identifizierte Probleme}
+\label{sec:problems}
+%------------------------------------------------------------
+
+\subsection{LiDAR-Reflexionen am Boden}
+\label{subsec:reflections}
+
+Der reflektierende Linoleumboden erzeugte Spiegelungspunkte,
+die vom LiDAR als nahe Hindernisse interpretiert wurden.
+Dies führte dazu, dass der Algorithmus fiktive Sicherheitsblasen
+erzeugte und freie Lücken fälschlicherweise versperrte.
+
+\textbf{Mögliche Abhilfemaßnahme:} Filterpipeline zur Entfernung
+von Boden-Reflexionen (z.\,B.\ Höhen\-filter via IMU-Fusion).
+
+\subsection{Sim-to-Real-Gap}
+\label{subsec:sim2real}
+
+Die im Simulator erzielten Parameter ließen sich auf das reale
+Fahrzeug nicht unmittelbar übertragen.
+Die Motorcharakteristik, das Reifenverhalten sowie Latenzzeiten
+zwischen Sensor und Aktor wichen von der Simulation ab.
+
+\textbf{Mögliche Abhilfemaßnahme:} Systematisches Param-Tuning
+direkt auf der Hardware oder Identifikation eines genaueren
+Fahrzeugmodells für die Simulation.
+
+\subsection{Zu hohe Fahrgeschwindigkeit}
+\label{subsec:speed}
+
+Bei $v_{\max} = 1{,}5\,\text{m/s}$ reagierte das Fahrzeug
+bei unvorhergesehenen Hindernissen zu träge.
+Eine Reduktion auf $v_{\max} = 0{,}8\,\text{m/s}$ verbesserte
+das Ausweichverhalten, erhöhte aber die Gesamtfahrtzeit deutlich.
+
+\subsection{Unzureichendes Blasen-Tuning}
+\label{subsec:bubble_tuning}
+
+Der Blasenradius $r_{\text{bubble}} = 0{,}35\,\text{m}$ war
+für die realen Hindernisabmessungen zu groß gewählt und verdeckte
+bei engen Durchfahrten die einzige freie Lücke vollständig.

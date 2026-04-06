@@ -1,0 +1,256 @@
+%============================================================
+\chapter{Implementierung}
+\label{chap:implementierung}
+%============================================================
+
+\section{ROS\,2-Knotenarchitektur}
+\label{sec:ros_nodes}
+
+Die gesamte Fahrzeuglogik ist in einem einzigen ROS\,2-Knoten
+(\texttt{ftg\_node}) implementiert.
+\Cref{fig:ros_graph} zeigt den vereinfachten Kommunikationsgraphen.
+
+\begin{figure}[H]
+  \centering
+  \fbox{\parbox{0.85\textwidth}{\centering\vspace{2.5cm}
+        Abbildung: ROS\,2-Knoten-Graph\\[0.5em]
+        \texttt{/scan} $\rightarrow$ \texttt{ftg\_node}
+        $\rightarrow$ \texttt{/drive}\\[1em]
+        (Bild in \texttt{images/ros\_graph.png} hinterlegen)
+        \vspace{2.5cm}}}
+  \caption{ROS\,2-Kommunikationsgraph des FTG-Systems}
+  \label{fig:ros_graph}
+\end{figure}
+
+\begin{table}[H]
+  \centering
+  \caption{Topics des \texttt{ftg\_node}}
+  \label{tab:topics}
+  \begin{tabular}{@{}llll@{}}
+    \toprule
+    \textbf{Topic}  & \textbf{Richtung} & \textbf{Typ}
+                    & \textbf{Beschreibung} \\
+    \midrule
+    \texttt{/scan}  & Subscribe  & \texttt{sensor\_msgs/LaserScan}
+                    & Rohe LiDAR-Daten \\
+    \texttt{/drive} & Publish    & \texttt{ackermann\_msgs/AckermannDriveStamped}
+                    & Lenkwinkel und Geschwindigkeit \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+%------------------------------------------------------------
+\section{Quellcode}
+\label{sec:source_code}
+%------------------------------------------------------------
+
+\subsection{Hauptknoten (\texttt{ftg\_node.py})}
+\label{subsec:ftg_node}
+
+\begin{lstlisting}[language=Python3,
+                   caption={FTG-Hauptknoten (vereinfacht)},
+                   label={lst:ftg_node}]
+#!/usr/bin/env python3
+"""
+Follow-the-Gap Node for the Mxck F1TENTH vehicle.
+Subscribes to /scan and publishes Ackermann drive commands to /drive.
+"""
+
+import math
+import numpy as np
+import rclpy
+from rclpy.node import Node
+from sensor_msgs.msg import LaserScan
+from ackermann_msgs.msg import AckermannDriveStamped
+
+
+class FollowTheGapNode(Node):
+    """Reactive obstacle avoidance using the Follow-the-Gap algorithm."""
+
+    # ------------------------------------------------------------------ #
+    #  Tuning parameters                                                   #
+    # ------------------------------------------------------------------ #
+    BUBBLE_RADIUS   = 0.35   # [m] safety bubble radius
+    MIN_RANGE       = 0.10   # [m] ignore points closer than this
+    MAX_RANGE       = 3.00   # [m] cap sensor range
+    ANGLE_FAST      = 10.0   # [deg] below -> max speed
+    ANGLE_SLOW      = 20.0   # [deg] above -> min speed
+    SPEED_MAX       = 1.5    # [m/s]
+    SPEED_MID       = 1.0    # [m/s]
+    SPEED_MIN       = 0.5    # [m/s]
+
+    def __init__(self) -> None:
+        super().__init__("ftg_node")
+        self.sub = self.create_subscription(
+            LaserScan, "/scan", self._scan_callback, 10
+        )
+        self.pub = self.create_publisher(
+            AckermannDriveStamped, "/drive", 10
+        )
+        self.get_logger().info("Follow-the-Gap node started.")
+
+    # ------------------------------------------------------------------ #
+    #  Callback                                                            #
+    # ------------------------------------------------------------------ #
+    def _scan_callback(self, msg: LaserScan) -> None:
+        ranges = np.array(msg.ranges, dtype=np.float32)
+        angles = np.linspace(
+            msg.angle_min, msg.angle_max, len(ranges)
+        )
+
+        # 1. Preprocess ranges
+        ranges = self._preprocess(ranges)
+
+        # 2. Safety bubble
+        ranges = self._apply_bubble(ranges)
+
+        # 3. Find best gap
+        start, end = self._find_best_gap(ranges)
+
+        # 4. Steering target
+        goal_idx = (start + end) // 2
+        steering = float(angles[goal_idx])
+
+        # 5. Velocity
+        speed = self._speed_from_angle(steering)
+
+        self._publish(steering, speed)
+
+    # ------------------------------------------------------------------ #
+    #  Algorithm steps                                                     #
+    # ------------------------------------------------------------------ #
+    def _preprocess(self, ranges: np.ndarray) -> np.ndarray:
+        ranges = np.clip(ranges, self.MIN_RANGE, self.MAX_RANGE)
+        ranges = np.nan_to_num(ranges, nan=self.MAX_RANGE,
+                               posinf=self.MAX_RANGE)
+        return ranges
+
+    def _apply_bubble(self, ranges: np.ndarray) -> np.ndarray:
+        closest = int(np.argmin(ranges))
+        r_close = ranges[closest]
+        if r_close < self.BUBBLE_RADIUS:
+            half = int(math.ceil(
+                math.atan2(self.BUBBLE_RADIUS, r_close)
+                / (2 * math.pi / len(ranges))
+            ))
+            lo = max(0, closest - half)
+            hi = min(len(ranges) - 1, closest + half)
+            ranges[lo : hi + 1] = 0.0
+        return ranges
+
+    def _find_best_gap(self, ranges: np.ndarray):
+        """Return (start, end) indices of the widest free gap."""
+        free = ranges > self.MIN_RANGE
+        best = (-1, -1)
+        best_len = 0
+        i = 0
+        while i < len(free):
+            if free[i]:
+                j = i
+                while j < len(free) and free[j]:
+                    j += 1
+                if j - i > best_len:
+                    best_len = j - i
+                    best = (i, j - 1)
+                i = j
+            else:
+                i += 1
+        if best == (-1, -1):
+            mid = len(ranges) // 2
+            return mid, mid
+        return best
+
+    def _speed_from_angle(self, angle_rad: float) -> float:
+        deg = abs(math.degrees(angle_rad))
+        if deg <= self.ANGLE_FAST:
+            return self.SPEED_MAX
+        if deg <= self.ANGLE_SLOW:
+            return self.SPEED_MID
+        return self.SPEED_MIN
+
+    # ------------------------------------------------------------------ #
+    #  Publisher helper                                                    #
+    # ------------------------------------------------------------------ #
+    def _publish(self, steering: float, speed: float) -> None:
+        msg = AckermannDriveStamped()
+        msg.drive.steering_angle = steering
+        msg.drive.speed = speed
+        self.pub.publish(msg)
+
+
+def main(args=None):
+    rclpy.init(args=args)
+    node = FollowTheGapNode()
+    rclpy.spin(node)
+    node.destroy_node()
+    rclpy.shutdown()
+
+
+if __name__ == "__main__":
+    main()
+\end{lstlisting}
+
+%------------------------------------------------------------
+\section{Parameter-Übersicht}
+\label{sec:params}
+%------------------------------------------------------------
+
+\begin{table}[H]
+  \centering
+  \caption{Tuning-Parameter des FTG-Algorithmus}
+  \label{tab:parameter}
+  \begin{tabular}{@{}lrrl@{}}
+    \toprule
+    \textbf{Parameter}        & \textbf{Symbol}
+      & \textbf{Wert}         & \textbf{Beschreibung} \\
+    \midrule
+    Blasenradius    & $r_{\text{bubble}}$ & $0{,}35\,\text{m}$
+      & Sicherheitsabstand zur Fahrzeugbreite \\
+    Min-Abstand     & $r_{\min}$          & $0{,}10\,\text{m}$
+      & Ignoriert zu nahe Punkte \\
+    Max-Abstand     & $r_{\max}$          & $3{,}00\,\text{m}$
+      & Kappungsgrenze für Sensor-Maximalwerte \\
+    Winkel (schnell)& $\alpha_1$          & $10°$
+      & Grenze für $v_{\max}$ \\
+    Winkel (langsam)& $\alpha_2$          & $20°$
+      & Grenze für $v_{\text{mid}}$ \\
+    $v_{\max}$      & –                   & $1{,}5\,\text{m/s}$
+      & Maximale Fahrgeschwindigkeit \\
+    $v_{\text{mid}}$& –                   & $1{,}0\,\text{m/s}$
+      & Mittlere Geschwindigkeit \\
+    $v_{\min}$      & –                   & $0{,}5\,\text{m/s}$
+      & Mindestgeschwindigkeit \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+%------------------------------------------------------------
+\section{Launch-Datei}
+\label{sec:launch}
+%------------------------------------------------------------
+
+\begin{lstlisting}[language=Python3,
+                   caption={Launch-Datei \texttt{ftg\_launch.py}},
+                   label={lst:launch}]
+from launch import LaunchDescription
+from launch_ros.actions import Node
+
+
+def generate_launch_description():
+    return LaunchDescription([
+        Node(
+            package="mxck_ftg",
+            executable="ftg_node",
+            name="ftg_node",
+            output="screen",
+            parameters=[{
+                "bubble_radius": 0.35,
+                "min_range":     0.10,
+                "max_range":     3.00,
+                "speed_max":     1.5,
+                "speed_mid":     1.0,
+                "speed_min":     0.5,
+            }],
+        ),
+    ])
+\end{lstlisting}
