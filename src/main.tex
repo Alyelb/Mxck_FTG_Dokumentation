@@ -1,0 +1,162 @@
+%============================================================
+%  Mxck – Follow the Gap: Projektdokumentation
+%  Autonomous driving / obstacle avoidance
+%============================================================
+\documentclass[12pt, a4paper, twoside, openany]{book}
+
+%------------------------------------------------------------
+% Pakete
+%------------------------------------------------------------
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[ngerman, english]{babel}
+\usepackage{lmodern}
+\usepackage{microtype}
+
+% Seitenlayout
+\usepackage[
+  top=25mm, bottom=25mm,
+  left=30mm, right=25mm,
+  headheight=15pt
+]{geometry}
+
+% Kopf- / Fußzeilen
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[LE,RO]{\thepage}
+\fancyhead[RE]{\nouppercase{\leftmark}}
+\fancyhead[LO]{\nouppercase{\rightmark}}
+\renewcommand{\headrulewidth}{0.4pt}
+
+% Grafiken & Farbe
+\usepackage{graphicx}
+\usepackage[dvipsnames]{xcolor}
+\usepackage{tikz}
+\graphicspath{{images/}}
+
+% Mathematik
+\usepackage{amsmath, amssymb, mathtools}
+
+% Quellcode-Listings
+\usepackage{listings}
+\lstset{
+  basicstyle=\ttfamily\small,
+  keywordstyle=\color{Blue}\bfseries,
+  commentstyle=\color{Gray}\itshape,
+  stringstyle=\color{OliveGreen},
+  numberstyle=\tiny\color{Gray},
+  numbers=left,
+  stepnumber=1,
+  frame=single,
+  breaklines=true,
+  breakatwhitespace=true,
+  tabsize=4,
+  captionpos=b,
+  showstringspaces=false
+}
+\lstdefinelanguage{Python3}{
+  language=Python,
+  morekeywords={True, False, None, async, await}
+}
+
+% Tabellen
+\usepackage{booktabs}
+\usepackage{array}
+
+% Hyperlinks
+\usepackage[hidelinks, pdfusetitle]{hyperref}
+\usepackage{cleveref}
+
+% Zitate
+\usepackage[numbers, sort&compress]{natbib}
+
+% Sonstiges
+\usepackage{csquotes}
+\usepackage{enumitem}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{float}
+\usepackage{emptypage}   % leere Seiten ohne Kopf-/Fußzeile
+\usepackage{setspace}
+\onehalfspacing
+
+%------------------------------------------------------------
+% Metadaten
+%------------------------------------------------------------
+\title{Mxck – Follow the Gap\\[0.5em]
+       \large Projektdokumentation zur autonomen Hindernissvermeidung}
+\author{Mxck Team}
+\date{\today}
+
+%============================================================
+\begin{document}
+%============================================================
+
+%------------------------------------------------------------
+% Titelseite
+%------------------------------------------------------------
+\begin{titlepage}
+  \centering
+  \vspace*{2cm}
+  {\scshape\LARGE Projektdokumentation\par}
+  \vspace{1cm}
+  \rule{\linewidth}{1pt}\\[0.4em]
+  {\Huge\bfseries Mxck -- Follow the Gap\par}
+  {\large Autonome Hindernissvermeidung mit dem F1TENTH-Fahrzeug\par}
+  \rule{\linewidth}{1pt}
+  \vspace{2cm}
+
+  {\Large Mxck Team\par}
+  \vspace{0.5cm}
+  {\large\today\par}
+
+  \vfill
+  % Logo placeholder – replace \includegraphics below with an actual image
+  % if a logo file (e.g. images/ftg_logo.png) is available.
+  \begin{tikzpicture}
+    \draw[line width=2pt, Blue] (0,0) rectangle (5,3);
+    \node[Blue, font=\Large\bfseries] at (2.5,2.2) {Mxck};
+    \node[Blue, font=\normalsize] at (2.5,1.5) {Follow the Gap};
+    \node[Blue, font=\small] at (2.5,0.8) {F1TENTH Autonomous Driving};
+  \end{tikzpicture}
+  \vfill
+
+  {\small
+   Dieses Dokument beschreibt Konzept, Implementierung und Ergebnisse
+   des Follow-the-Gap-Algorithmus auf einem F1TENTH-Fahrzeug.
+   Das gesteckte Projektziel -- vollständig autonomes Umfahren von
+   Hindernissen -- konnte im Rahmen dieses Projekts nicht vollständig
+   erreicht werden; dennoch liefert die Dokumentation eine nachvollziehbare
+   Analyse der durchgeführten Arbeiten.
+  }
+\end{titlepage}
+
+%------------------------------------------------------------
+% Frontmatter
+%------------------------------------------------------------
+\frontmatter
+\tableofcontents
+\listoffigures
+\listoftables
+\lstlistoflistings
+
+%------------------------------------------------------------
+% Hauptteil
+%------------------------------------------------------------
+\mainmatter
+\input{chapters/01_einleitung}
+\input{chapters/02_systemaufbau}
+\input{chapters/03_algorithmus}
+\input{chapters/04_implementierung}
+\input{chapters/05_ergebnisse}
+\input{chapters/06_fazit}
+
+%------------------------------------------------------------
+% Literaturverzeichnis
+%------------------------------------------------------------
+\backmatter
+\bibliographystyle{plainnat}
+\bibliography{references}
+
+\end{document}

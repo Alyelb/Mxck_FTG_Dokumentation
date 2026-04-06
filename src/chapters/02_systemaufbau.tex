@@ -1,0 +1,102 @@
+%============================================================
+\chapter{Systemaufbau}
+\label{chap:systemaufbau}
+%============================================================
+
+\section{Hardware-Plattform}
+\label{sec:hardware}
+
+Das Mxck-Fahrzeug basiert auf der F1TENTH-Referenzplattform
+\cite{okelly2020f1tenth}.
+\Cref{tab:hardware} gibt einen Überblick über die verbauten Komponenten.
+
+\begin{table}[H]
+  \centering
+  \caption{Hardware-Komponenten des Mxck-Fahrzeugs}
+  \label{tab:hardware}
+  \begin{tabular}{@{}lll@{}}
+    \toprule
+    \textbf{Komponente} & \textbf{Modell / Spezifikation} & \textbf{Funktion} \\
+    \midrule
+    Chassis     & Traxxas Slash 4×4 (1:10)     & Antrieb und Lenkung \\
+    Rechner     & NVIDIA Jetson Nano 4\,GB     & Hauptrechner (ROS\,2) \\
+    LiDAR       & Hokuyo UST-10LX              & Umgebungserfassung \\
+    IMU         & MPU-6050                     & Lage- / Beschleunigungsdaten \\
+    Motortreiber & VESC 6 MkVI                 & Motorregelung \\
+    Kamera      & Intel RealSense D435i        & Optionale Tiefenerfassung \\
+    Akku        & LiPo 3S 5000\,mAh            & Energieversorgung \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\subsection{LiDAR-Sensor}
+\label{subsec:lidar}
+
+Der Hokuyo UST-10LX ist ein 2D-LiDAR-Scanner mit einem Sichtfeld
+von \(270°\) und einer Winkelauflösung von \(0{,}25°\), was
+\(1080\) Messpunkten pro Scan entspricht.
+Die maximale Messreichweite beträgt \(10\,\text{m}\) bei einer
+Scan-Frequenz von \(40\,\text{Hz}\).
+
+\begin{figure}[H]
+  \centering
+  % Platzhalter – bei Verfügbarkeit durch echtes Bild ersetzen
+  \fbox{\parbox{0.6\textwidth}{\centering\vspace{3cm}
+        Abbildung: Hokuyo UST-10LX am Fahrzeug\\[1em]
+        (Bild in \texttt{images/lidar\_mount.png} hinterlegen)
+        \vspace{3cm}}}
+  \caption{LiDAR-Sensor (Hokuyo UST-10LX) an der Fahrzeugfront}
+  \label{fig:lidar_mount}
+\end{figure}
+
+\subsection{Recheneinheit}
+\label{subsec:jetson}
+
+Als Onboard-Computer wird ein \emph{NVIDIA Jetson Nano} verwendet.
+Dank der integrierten GPU eignet sich die Plattform für
+rechenintensive Aufgaben wie neuronale Bildverarbeitung, wurde im
+Rahmen dieses Projekts jedoch ausschließlich für die LiDAR-basierte
+Steuerung eingesetzt.
+
+%------------------------------------------------------------
+\section{Software-Stack}
+\label{sec:software}
+%------------------------------------------------------------
+
+\subsection{Betriebssystem und ROS\,2}
+\label{subsec:ros}
+
+Das Fahrzeug läuft unter \textbf{Ubuntu 20.04 LTS} mit
+\textbf{ROS\,2 Foxy Fitzroy} \cite{macenski2022ros2}.
+Die Kommunikation zwischen den einzelnen Softwarekomponenten erfolgt
+über das ROS-Publisher-/Subscriber-Modell.
+
+\subsection{Paketstruktur}
+\label{subsec:packages}
+
+\begin{table}[H]
+  \centering
+  \caption{ROS\,2-Pakete des Projekts}
+  \label{tab:ros_packages}
+  \begin{tabular}{@{}ll@{}}
+    \toprule
+    \textbf{Paket}            & \textbf{Beschreibung} \\
+    \midrule
+    \texttt{mxck\_ftg}        & Hauptpaket mit FTG-Knoten \\
+    \texttt{mxck\_bringup}    & Launch-Dateien und Konfigurationen \\
+    \texttt{mxck\_msgs}       & Benutzerdefinierte Nachrichten \\
+    \texttt{ackermann\_msgs}  & Standardnachrichten für Fahrzeugsteuerung \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\subsection{Simulations- und Testumgebung}
+\label{subsec:simulation}
+
+Für Entwicklung und erste Tests wurde der
+\emph{F1TENTH Gym}-Simulator \cite{okelly2020f1tenth} genutzt,
+der auf \texttt{gym}-kompatiblen Schnittstellen basiert und eine
+physikalisch realistische Fahrzeugdynamik simuliert.
+Auf dem realen Fahrzeug wurden Tests auf einem \(6\,\text{m} \times
+4\,\text{m}\) großen Indoor-Parcours mit statischen Hindernissen
+durchgeführt.

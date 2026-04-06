@@ -1,0 +1,81 @@
+%============================================================
+\chapter{Einleitung}
+\label{chap:einleitung}
+%============================================================
+
+\section{Motivation und Projekthintergrund}
+\label{sec:motivation}
+
+Autonomes Fahren hat sich in den vergangenen Jahren von einem
+akademischen Forschungsfeld zu einer treibenden Kraft der modernen
+Automobilindustrie entwickelt.
+Fahrzeuge müssen dabei in der Lage sein, ihre Umgebung wahrzunehmen,
+relevante Hindernisse zu erkennen und in Echtzeit sichere Fahrtrajektorien
+zu berechnen.
+
+Das vorliegende Projekt -- \textbf{Mxck Follow the Gap (FTG)} --
+entstand im Rahmen einer Lehrveranstaltung und nutzt die
+\emph{F1TENTH}-Plattform \cite{okelly2020f1tenth}: ein
+maßstabsverkleinertes (1:10) Hochgeschwindigkeits-Rennfahrzeug,
+das als standardisierte Plattform für die Entwicklung und den
+Vergleich autonomer Fahrstrategien eingesetzt wird.
+
+\subsection*{Zielsetzung}
+
+Das übergeordnete Ziel des Projekts war es, das Fahrzeug
+vollständig autonom auf einem abgesteckten Kurs fahren zu lassen
+und dabei alle auftretenden Hindernisse sicher zu umfahren.
+Als Kerntechnologie wurde der sogenannte
+\emph{Follow-the-Gap}-Algorithmus (FTG) \cite{sezer2012novel}
+gewählt, da er mit verhältnismäßig geringem Berechnungsaufwand
+auskommt und ausschließlich auf \emph{LiDAR}-Rohdaten basiert.
+
+\subsection*{Projektausgang}
+
+Trotz intensiver Entwicklungs- und Testphasen konnte das
+angestrebte Ziel -- eine robuste und vollständige
+Hindernissvermeidung unter realen Bedingungen -- innerhalb des
+vorgegebenen Zeitrahmens nicht vollständig erreicht werden.
+Die Dokumentation schildert dennoch den gesamten Arbeitsprozess,
+identifiziert die aufgetretenen Schwierigkeiten und gibt Empfehlungen
+für weiterführende Arbeiten.
+
+%------------------------------------------------------------
+\section{Verwandte Arbeiten}
+\label{sec:related_work}
+%------------------------------------------------------------
+
+Der Follow-the-Gap-Algorithmus wurde ursprünglich von
+\citeauthor{sezer2012novel}~\cite{sezer2012novel} für mobile Roboter
+vorgeschlagen und seitdem in verschiedenen Varianten für
+Fahrzeuganwendungen adaptiert.
+Im F1TENTH-Kontext stellt der Algorithmus eine beliebte Basisstrategie
+dar, die in zahlreichen universitären Wettbewerben eingesetzt und
+weiterentwickelt wurde \cite{fulgentini2022comparative}.
+
+Gegenüber rein reaktiven Verfahren wie dem \emph{Vector Field Histogram}
+(VFH) \cite{ulrich1998vfh} zeichnet sich FTG durch seine direkte
+Nutzung der Lücken (\enquote{gaps}) im LiDAR-Scan aus, anstatt
+Potenzialfelder zu konstruieren.
+
+%------------------------------------------------------------
+\section{Aufbau der Dokumentation}
+\label{sec:structure}
+%------------------------------------------------------------
+
+Die Dokumentation ist wie folgt gegliedert:
+
+\begin{itemize}[leftmargin=*]
+  \item \textbf{Kapitel~\ref{chap:systemaufbau}} beschreibt die
+        Hardware- und Softwareplattform des Mxck-Fahrzeugs.
+  \item \textbf{Kapitel~\ref{chap:algorithmus}} erläutert den
+        Follow-the-Gap-Algorithmus und dessen theoretische Grundlagen.
+  \item \textbf{Kapitel~\ref{chap:implementierung}} dokumentiert die
+        konkrete ROS\,2-Implementierung, die Knotenarchitektur und
+        die verwendeten Parameter.
+  \item \textbf{Kapitel~\ref{chap:ergebnisse}} stellt die Testergebnisse
+        und Beobachtungen aus den Versuchsläufen dar.
+  \item \textbf{Kapitel~\ref{chap:fazit}} fasst das Projekt zusammen,
+        benennt Ursachen für das Nichterreichen des Ziels und gibt
+        Empfehlungen für künftige Arbeiten.
+\end{itemize}

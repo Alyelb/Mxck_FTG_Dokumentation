@@ -1,0 +1,85 @@
+%============================================================
+\chapter{Fazit und Ausblick}
+\label{chap:fazit}
+%============================================================
+
+\section{Zusammenfassung}
+\label{sec:summary}
+
+Im Rahmen des Projekts \emph{Mxck Follow the Gap} wurde der
+Follow-the-Gap-Algorithmus auf einem F1TENTH-Fahrzeug implementiert
+und erprobt.
+Die theoretische Auseinandersetzung mit dem Verfahren sowie die
+erfolgreichen Simulationstests bestätigen die grundsätzliche
+Eignung des Ansatzes für reaktive Hindernissvermeidung.
+
+Das übergeordnete Projektziel -- ein vollständig autonomes und
+kollisionsfreies Durchfahren eines realen Hindernisparcours --
+konnte jedoch nicht erreicht werden.
+Die wesentlichen Ursachen lassen sich wie folgt bündeln:
+
+\begin{enumerate}[label=\arabic*., leftmargin=*]
+  \item \textbf{Sim-to-Real-Diskrepanz:}
+        Parameter, die im Simulator gute Ergebnisse liefern, können
+        auf der realen Plattform zu instabilem Verhalten führen.
+  \item \textbf{Sensorqualität:}
+        Bodenreflexionen des Linoleum\-bodens störten die
+        LiDAR-Messungen und erzeugten Phantomhindernisse.
+  \item \textbf{Parametertuning:}
+        Der Sicherheitsblasen-Radius wurde für reale Bedingungen
+        zu groß gewählt, was freie Lücken in engen Passagen blockierte.
+  \item \textbf{Zeitrahmen:}
+        Der vorhandene Projektzeitraum ließ keine ausreichend iterative
+        Optimierung der Hardwareinstallation zu.
+\end{enumerate}
+
+%------------------------------------------------------------
+\section{Empfehlungen für weiterführende Arbeiten}
+\label{sec:future_work}
+%------------------------------------------------------------
+
+\begin{description}[leftmargin=*]
+  \item[Systematisches Hardware-Tuning:]
+        Parameter sollten direkt auf dem realen Fahrzeug in kontrollierten
+        Umgebungen optimiert werden, z.\,B.\ mittels automatisierter
+        Bayes-Optimierung \cite{snoek2012practical}.
+  \item[Sensorvorverarbeitung:]
+        Eine dedizierte Filterpipeline für Boden- und
+        Decken\-reflexionen (z.\,B.\ Kombination aus IMU-Daten und
+        LiDAR-Intensitätswerten) kann die Qualität der Messpunkte
+        wesentlich verbessern.
+  \item[Hybridansatz:]
+        Die Kombination von FTG mit einer globalen Pfadplanung
+        (z.\,B.\ $A^*$ oder RRT) könnte das reaktive Verfahren
+        für komplexere Szenarien stabilisieren.
+  \item[Genaueres Simulationsmodell:]
+        Die Einbindung eines realistischeren Fahrzeugmodells
+        (Reifenreibung, Motorträgheit, Latenzzeiten) in den
+        Simulator würde die Übertragbarkeit der Parameter verbessern.
+  \item[Tiefenkamera:]
+        Die bereits verbaute Intel RealSense D435i könnte genutzt
+        werden, um 3D-Informationen zu gewinnen und
+        Boden\-reflexionen durch Höhenfilterung auszuschließen.
+\end{description}
+
+%------------------------------------------------------------
+\section{Lernziele und Erkenntnisse}
+\label{sec:lessons}
+%------------------------------------------------------------
+
+Trotz des nicht erreichten Projektziels konnten wertvolle
+Erkenntnisse gewonnen werden:
+
+\begin{itemize}
+  \item Der \emph{Sim-to-Real-Gap} ist für reaktive Verfahren
+        kritisch und muss beim Systemdesign frühzeitig
+        berücksichtigt werden.
+  \item Die Qualität der Sensordaten (Rauschen, Reflexionen,
+        Auflösung) hat einen entscheidenden Einfluss auf die
+        Robustheit des Algorithmus.
+  \item Iteratives Testing und frühzeitiges Hardware-Debugging
+        sind unerlässlich für den Projekterfolg.
+  \item Die F1TENTH-Plattform bietet eine exzellente Grundlage für
+        autonome Fahrexperimente und ist trotz der Herausforderungen
+        für Lehrveranstaltungen gut geeignet.
+\end{itemize}

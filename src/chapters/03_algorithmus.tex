@@ -1,0 +1,136 @@
+%============================================================
+\chapter{Follow-the-Gap-Algorithmus}
+\label{chap:algorithmus}
+%============================================================
+
+\section{Grundidee}
+\label{sec:ftg_idea}
+
+Der \emph{Follow-the-Gap}-Algorithmus (FTG) ist ein reaktives
+Verfahren zur Hindernissvermeidung, das ausschließlich auf den
+Rohdaten eines 2D-LiDAR-Scanners arbeitet.
+Die Grundidee besteht darin, im aktuellen LiDAR-Scan die größte
+freie Lücke (\enquote{Gap}) zu identifizieren und das Fahrzeug
+auf deren Mittelpunkt auszurichten.
+
+\begin{enumerate}[label=\arabic*., leftmargin=*]
+  \item \textbf{Sicherheitsblase erzeugen:}
+        Um jeden detektierten Messpunkt, der näher als ein
+        Schwellwert \(r_{\min}\) liegt, wird eine virtuelle
+        Sicherheitsblase mit Radius \(r_{\text{bubble}}\) gelegt.
+        Alle Messpunkte innerhalb dieser Blase werden auf
+        \(0\) gesetzt.
+  \item \textbf{Freie Lücken bestimmen:}
+        Zusammenhängende Folgen von Messpunkten mit Abstand
+        \(> r_{\min}\) bilden sogenannte \emph{freie Lücken}.
+  \item \textbf{Beste Lücke wählen:}
+        Die breiteste Lücke (größte Anzahl aufeinanderfolgender
+        freier Messpunkte) wird als Ziellücke ausgewählt.
+  \item \textbf{Lenkwinkel berechnen:}
+        Der Lenkwinkel \(\delta\) wird so gewählt, dass das Fahrzeug
+        auf den \emph{Mittelpunkt} der besten Lücke zeigt.
+  \item \textbf{Geschwindigkeitsregelung:}
+        Die Fahrgeschwindigkeit \(v\) wird in Abhängigkeit des
+        berechneten Lenkwinkels reduziert, um bei engen Kurven
+        stabiler zu fahren.
+\end{enumerate}
+
+%------------------------------------------------------------
+\section{Mathematische Beschreibung}
+\label{sec:ftg_math}
+%------------------------------------------------------------
+
+Sei \(\mathcal{S} = \{s_0, s_1, \ldots, s_{N-1}\}\) die Folge der
+\(N\) LiDAR-Messpunkte eines einzelnen Scans, wobei
+\(s_i = (r_i, \theta_i)\) den Abstand \(r_i\) und den Winkel
+\(\theta_i\) des \(i\)-ten Strahls bezeichnet.
+
+\subsection{Sicherheitsblase}
+\label{subsec:bubble}
+
+Sei \(i^* = \arg\min_i r_i\) der Index des nächsten Hindernispunkts.
+Alle Messpunkte \(s_j\) mit
+\[
+  \left| \theta_j - \theta_{i^*} \right| \leq
+  \arctan\!\left(\frac{r_{\text{bubble}}}{r_{i^*}}\right)
+\]
+werden auf \(r_j \leftarrow 0\) gesetzt.
+Der Parameter \(r_{\text{bubble}}\) entspricht etwa der halben
+Fahrzeugbreite zuzüglich eines Sicherheitszuschlags.
+
+\subsection{Spaltenerkennung}
+\label{subsec:gaps}
+
+Eine freie Lücke \(G_k = [i_{\text{start}}^{(k)},\,
+i_{\text{end}}^{(k)}]\) ist eine maximale Folge von Indizes, für
+die gilt:
+\[
+  r_i > r_{\min}
+  \quad \forall\, i \in
+  \bigl[i_{\text{start}}^{(k)},\, i_{\text{end}}^{(k)}\bigr].
+\]
+
+Die \emph{beste Lücke} \(G^*\) wird durch
+\[
+  G^* = \arg\max_{G_k}
+  \bigl(i_{\text{end}}^{(k)} - i_{\text{start}}^{(k)}\bigr)
+\]
+bestimmt.
+
+\subsection{Lenkwinkelberechnung}
+\label{subsec:steering}
+
+Der Zielpunkt liegt im Mittelpunkt der besten Lücke:
+\[
+  i_{\text{goal}} =
+  \left\lfloor
+    \frac{i_{\text{start}}^* + i_{\text{end}}^*}{2}
+  \right\rfloor.
+\]
+
+Der entsprechende Lenkwinkel ergibt sich direkt aus dem Winkel
+des Zielpunkts:
+\[
+  \delta = \theta_{i_{\text{goal}}}.
+\]
+
+\subsection{Geschwindigkeitsprofil}
+\label{subsec:velocity}
+
+Um eine stabile Kurvenfahrt zu gewährleisten, wird die Zielgeschwindigkeit
+\(v\) als nichtlineare Funktion des Lenkwinkels gewählt:
+\[
+  v(\delta) =
+  \begin{cases}
+    v_{\max}          & \text{falls } |\delta| \leq \alpha_1, \\
+    v_{\text{mid}}    & \text{falls } \alpha_1 < |\delta| \leq \alpha_2, \\
+    v_{\min}          & \text{falls } |\delta| > \alpha_2,
+  \end{cases}
+\]
+wobei \(\alpha_1 = 10°\), \(\alpha_2 = 20°\) in unserer Implementierung
+verwendet wurden (vgl.\ \cref{tab:parameter}).
+
+%------------------------------------------------------------
+\section{Diskussion der Strategie}
+\label{sec:ftg_discussion}
+%------------------------------------------------------------
+
+\textbf{Vorteile:}
+\begin{itemize}
+  \item Geringer Rechenaufwand – echtzeitfähig bei $>40\,\text{Hz}$.
+  \item Keine Karte oder Vorwissen über die Umgebung notwendig.
+  \item Robust gegenüber Messrauschen dank Radiusmittelung.
+\end{itemize}
+
+\textbf{Nachteile und bekannte Grenzen:}
+\begin{itemize}
+  \item Rein reaktiv -- keine Vorausplanung möglich.
+  \item Kann in engen Korridoren oder bei konkaven Hindernisformen
+        in lokalen Minima steckenbleiben.
+  \item Die Wahl der Parameter (\(r_{\min}\), \(r_{\text{bubble}}\),
+        Schwellwerte für \(v\)) ist stark umgebungsabhängig und
+        erfordert aufwändiges Tuning.
+  \item In unserem Aufbau führte die begrenzte Scan-Sichtweite in
+        engen Kurven zu Fehlklassifizierungen freier Lücken
+        (siehe \cref{chap:ergebnisse}).
+\end{itemize}
